@@ -1,0 +1,40 @@
+Dataset:
+  data_path: dataset/toy.csv
+  input_list: [x1,x2,x3]
+  output_list: [y]
+  D: 0
+  d: 0
+  units: []
+Structure:
+  latent:
+    adopt: true
+    dim: 1
+    norm: true
+    sparse: 64
+    connect: []
+    ratio: []
+  express:
+    mode: regression
+    degree: 3
+    norm: true
+  c2f:
+    range:
+    - -2
+    - 2
+    top: 10
+    init_step: 0.5
+    refine_step: [0.5, 0.2, 0.1]
+    sparse: 64
+    fix: [[]]
+  sr:
+    adopt: false
+    iter: 40
+    binary: ['+', '-', '*', '/']
+    unary: ['sin', 'exp']
+    batch: 1024
+Log:
+  outputs_dir: outputs
+  project_name: toy1
+  time: true
+  stdlog: false
+  tensorboard: true

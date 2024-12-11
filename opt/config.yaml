@@ -1,0 +1,43 @@
+# dataset setting
+Dataset:    
+  data_path: dataset csv path
+  input_list: input list
+  output_list: output list
+  D: (unit_dim, in_dim), dimension matrix for input list (D=0 means not considering physical dimensions)
+  d: (unit_dim), dimension matrix for output list (d=0 means not considering physical dimensions)
+  units: basic units involved. eg. [], ['kg','m','s','K','A','cd','mol']
+# structure: x-(latent layer)->z-(express layer)->y
+# latent layer: C2F search
+# express layer: regression\inr
+Structure:  
+  latent:
+    adopt: whether to adopt a latent layer. if not, we set mu=0, W=eye(p)
+    dim: latent dimension
+    norm: latent normalization, z=z/abs(z).max()
+    sparse: sparsity of the displayed weights (not for train, only for display)
+    connect: connection prior. eg. [[1,3],[2,4],[5]] means x1,x3->z1, x2,x4->z2, x5->z3
+    ratio: ratio estimation. eg. [[1.0,1.2],[1.0,-0.4],[1.0]] means w11/w13=1.0/1.2, w22/w24=1.0/-0.4
+  express:
+    mode: regression\inr
+    degree: regression degree\inr expansion degree. if d!=0, we'll automatically set degree to 1
+    norm: output normalization, y=y/abs(y).max()
+  c2f:
+    range: coefficient search range 
+    top: search near the top coefficients
+    init_step: initial step
+    refine_step: refine step
+    sparse: each input can be associated with at most a few latent variables (1<=sp<=latent_dim)
+    fix: fix coefficients. eg. [[-0.5, -1.0, -1.0], [1.0, 1.5, 2.0]]
+  sr:
+    adopt: whether to adopt symbolic regression
+    iter: sr iterations
+    binary: binary operators. eg. ['+', '-', '*', '/']
+    unary: unary operators. eg. ['cos', 'exp', 'sin', 'inv(x) = 1/x']
+    batch: sr batch size. -1 indicates no batch
+# project_dir: {outputs_dir}/{project_name}_{time}
+Log: 
+  outputs_dir: outputs dir
+  project_name: project name
+  time: time suffix to prevent project folder conflicts 
+  stdlog: std log
+  tensorboard: tensorboard log

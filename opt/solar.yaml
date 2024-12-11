@@ -1,0 +1,38 @@
+Dataset:
+  data_path: 'dataset/solar.csv'
+  input_list: ['a', 'b', 'm']
+  output_list: ['T']
+  D: 0
+  d: 0
+  units: []
+Structure:
+  latent:
+    adopt: true
+    dim: 1
+    norm: false
+    sparse: 4
+    connect: []
+    ratio: []
+  express:
+    mode: regression
+    degree: 1
+    norm: false
+  c2f:
+    range: [-2,2]
+    top: 10
+    init_step: 1.0
+    refine_step: [0.5, 0.2, 0.1, 0.1]
+    sparse: 7
+    fix: [[]]
+  sr:
+    adopt: false
+    iter: 40
+    binary: ['+', '-', '*', '/']
+    unary: ['cos', 'exp', 'sin', 'inv(x) = 1/x']
+    batch: 1024
+Log: 
+  outputs_dir: outputs
+  project_name: solar
+  time: true
+  stdlog: false
+  tensorboard: true

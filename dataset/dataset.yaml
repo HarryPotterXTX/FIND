@@ -1,0 +1,18 @@
+toy0:
+  source: simulation data with 'dataset/toy0.py'
+
+toy:
+  source: simulation data with 'dataset/toy.py'
+
+keyhole: 
+  source: "Data-driven discovery of dimensionless numbers and governing laws from scarce measurements"
+
+pde:
+  source: "Data-driven discovery of dimensionless numbers and governing laws from scarce measurements"
+
+solar:
+  source: "Principal Component Analysis for Equation Discovery"
+
+solar1:
+  source: "Combining data and theory for derivable scientific discovery with AI-Descartes"
+  "NASA. Planets Factsheet. https://nssdc.gsfc.nasa.gov/planetary/factsheet/ (2017)."
