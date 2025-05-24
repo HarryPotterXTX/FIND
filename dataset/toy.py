@@ -17,7 +17,13 @@ def latent(x, idxs, powers):
 def toy(id):
     size = 4096
     # latent_dim=1
-    if id==1:
+    if id==0:
+        x_shape = [[1,64,16], [10,128,16], [-16,16,16]]
+        x = create_flattened_coords(x_shape)
+        x = x[np.random.choice(len(x), min(size,len(x)), replace=False)]
+        z = latent(x=x, idxs=[1,2,3], powers=[-1.2, -0.5, 1.0])
+        y = np.sin(z)
+    elif id==1:
         x_shape = [[1,64,16], [10,128,16], [-16,16,16]]
         x = create_flattened_coords(x_shape)
         x = x[np.random.choice(len(x), min(size,len(x)), replace=False)]
@@ -100,5 +106,5 @@ def create_dataset(dataset_id):
 
 if __name__=="__main__":
     reproduc()
-    dataset_id = 1
+    dataset_id = 0
     create_dataset(dataset_id=dataset_id)

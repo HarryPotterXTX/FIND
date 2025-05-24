@@ -13,9 +13,9 @@ Structure:
     adopt: true
     dim: 1
     norm: true
-    sparse: 20
     connect: []
     ratio: []
+    previous: []
   express:
     mode: regression
     degree: 4
@@ -23,9 +23,10 @@ Structure:
   c2f:
     range: [-2,2]
     top: 10
+    k1: 64
+    k2: 16
     init_step: 1.0
     refine_step: [0.5]
-    sparse: 1
     fix: [[]]
   sr:
     adopt: false
@@ -33,6 +34,10 @@ Structure:
     binary: ['+', '-', '*', '/']
     unary: ['cos', 'exp', 'sin', 'inv(x) = 1/x']
     batch: -1
+Display:
+  top: 20
+  sparse: 64
+  precision: 0.1
 Log: 
   outputs_dir: outputs
   project_name: keyhole

@@ -1,7 +1,11 @@
 Dataset:
   data_path: dataset/toy.csv
-  input_list: [x1,x2,x3]
-  output_list: [y]
+  input_list:
+  - x1
+  - x2
+  - x3
+  output_list:
+  - 'y'
   D: 0
   d: 0
   units: []
@@ -10,9 +14,9 @@ Structure:
     adopt: true
     dim: 1
     norm: true
-    sparse: 64
     connect: []
     ratio: []
+    previous: []
   express:
     mode: regression
     degree: 3
@@ -22,19 +26,34 @@ Structure:
     - -2
     - 2
     top: 10
+    k1: 64
+    k2: 64
     init_step: 0.5
-    refine_step: [0.5, 0.2, 0.1]
-    sparse: 64
-    fix: [[]]
+    refine_step:
+    - 0.5
+    - 0.2
+    - 0.1
+    fix:
+    - []
   sr:
     adopt: false
     iter: 40
-    binary: ['+', '-', '*', '/']
-    unary: ['sin', 'exp']
+    binary:
+    - +
+    - '-'
+    - '*'
+    - /
+    unary:
+    - sin
+    - exp
     batch: 1024
+Display:
+  top: 20
+  sparse: 64
+  precision: 0.1
 Log:
   outputs_dir: outputs
-  project_name: toy1
+  project_name: toy0
   time: true
   stdlog: false
   tensorboard: true

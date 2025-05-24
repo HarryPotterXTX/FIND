@@ -1,28 +1,55 @@
 Dataset:
   data_path: 'dataset/solar.csv'
-  input_list: ['a', 'b', 'm']
-  output_list: ['T']
-  D: 0
-  d: 0
-  units: []
+
+  # input_list: ['Diameter', 'Density', 'Gravity', 'Escape Velocity', 'Rotation Period', 'Length of Day',
+  #   'Distance from Sun', 'Perihelion', 'Aphelion', 'Orbital Period', 'Orbital Velocity']
+  # output_list: ['Mass']
+  # D: [[ 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  #     [ 1.0,-3.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0],
+  #     [ 0.0, 0.0,-2.0,-1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0,-1.0]]
+  # d: [ 1.0, 0.0, 0.0]
+  # units: ['kg', 'm', 's']
+
+  input_list: ['Diameter', 'Density', 'Gravity', 'Escape Velocity', 'Length of Day']
+  output_list: ['Mass']
+  D: [[ 0.0, 1.0, 0.0, 0.0, 0.0],
+      [ 1.0,-3.0, 1.0, 1.0, 0.0],
+      [ 0.0, 0.0,-2.0,-1.0, 1.0]]
+  d: [ 1.0, 0.0, 0.0]
+  units: ['kg', 'm', 's']
+
+  # input_list: ['Diameter', 'Density', 'Gravity', 'Escape Velocity', 'Rotation Period', 'Length of Day',
+  #   'Distance from Sun', 'Perihelion', 'Aphelion', 'Orbital Period', 'Orbital Velocity']
+  # output_list: ['Mass']
+  # D: 0
+  # d: 0
+  # units: []
+
+  # input_list: ['Diameter', 'Density', 'Gravity', 'Escape Velocity', 'Length of Day']
+  # output_list: ['Mass']
+  # D: 0
+  # d: 0
+  # units: []
+
 Structure:
   latent:
     adopt: true
     dim: 1
     norm: false
-    sparse: 4
     connect: []
     ratio: []
+    previous: []
   express:
     mode: regression
     degree: 1
-    norm: false
+    norm: true
   c2f:
     range: [-2,2]
     top: 10
-    init_step: 1.0
-    refine_step: [0.5, 0.2, 0.1, 0.1]
-    sparse: 7
+    k1: 64
+    k2: 2
+    init_step: 2.0
+    refine_step: [1.0,0.5]
     fix: [[]]
   sr:
     adopt: false
@@ -30,6 +57,10 @@ Structure:
     binary: ['+', '-', '*', '/']
     unary: ['cos', 'exp', 'sin', 'inv(x) = 1/x']
     batch: 1024
+Display:
+  top: 20
+  sparse: 64
+  precision: 0.1
 Log: 
   outputs_dir: outputs
   project_name: solar

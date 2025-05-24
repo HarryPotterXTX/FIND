@@ -4,15 +4,52 @@ toy0:
 toy:
   source: simulation data with 'dataset/toy.py'
 
+solar:
+  source: "Combining data and theory for derivable scientific discovery with AI-Descartes"
+  "NASA. Planets Factsheet. https://nssdc.gsfc.nasa.gov/planetary/factsheet/ (2017)."
+
+solar1:
+  source: "Principal Component Analysis for Equation Discovery"
+  
+nasa:
+  source: 
+    https://nssdc.gsfc.nasa.gov/planetary/factsheet/
+    https://exoplanetarchive.ipac.caltech.edu/overview/Trappist-1
+    https://exoplanetarchive.ipac.caltech.edu/overview/kepler-90#planet_KOI-351-e_collapsible
+    https://exoplanetarchive.ipac.caltech.edu/overview/GJ%20667
+
 keyhole: 
   source: "Data-driven discovery of dimensionless numbers and governing laws from scarce measurements"
 
-pde:
+porosity:
   source: "Data-driven discovery of dimensionless numbers and governing laws from scarce measurements"
 
-solar:
-  source: "Principal Component Analysis for Equation Discovery"
+convection:
+  source: "Data-driven discovery of dimensionless numbers and governing laws from scarce measurements"
 
-solar1:
-  source: "Combining data and theory for derivable scientific discovery with AI-Descartes"
-  "NASA. Planets Factsheet. https://nssdc.gsfc.nasa.gov/planetary/factsheet/ (2017)."
+compressor:
+  source: "Dimensional analysis of hydrogen Knudsen compressor"
+
+pde_ns:
+  source: "Data-driven discovery of dimensionless numbers and governing laws from scarce measurements"
+
+pde_spring:
+  source: simulation data with 'dataset/pde_spring.py'
+
+pde_rlc:
+  source: simulation data with 'dataset/pde_rlc.py'
+
+atom_xx:
+  source: "Machine learning-assisted dual-atom sites design with interpretable descriptors unifying electrocatalytic reactions"
+  process: train_test.xlsx element & 41467_2024_52519_MOESM5_ESM.xlsx Figure 2g -> atom_xx.csv
+
+atom_xy_crr:
+  source: "Machine learning-assisted dual-atom sites design with interpretable descriptors unifying electrocatalytic reactions"
+  process: feature.py part & train_test.xlsx -> atom_xy.csv || 41467_2024_52519_MOESM5_ESM.xlsx Figure 4d
+
+feynman:
+  source: "AI Feynman: a Physics-Inspired Method for Symbolic Regression"
+  "https://space.mit.edu/home/tegmark/aifeynman.html"
+
+rlc:
+  source: simulation data with 'dataset/rlc.py'

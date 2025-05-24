@@ -30,7 +30,7 @@ class LatentLayer(torch.nn.Module):
         connection relationship: E0*li+e0=0, E1*li+e1!=0 -> li=Fi*mui+fi (E0*Fi=0, E0*fi=-e0)
         in summary: Wi^T=E*(Fi*mui+fi)+e, s.t. E1*(Fi*mui+fi)+e1!=0
     '''
-    def __init__(self, D:torch.tensor, d:torch.tensor, latent_dim:int=1, latent_connect:list=[], latent_ratio:list=[]):
+    def __init__(self, D:torch.tensor, d:torch.tensor, latent_dim:int=1, latent_connect:list=[], latent_ratio:list=[], coef_previous:list=[]):
         super().__init__()
         self.D = D                          # input unit matrix
         self.d = d                          # output unit matrix
@@ -41,10 +41,9 @@ class LatentLayer(torch.nn.Module):
         print('basis matrix V:\n'+str(self.E))
         print('bias vector v:\n'+str(self.e))
         # E0*li+e0=0, E1*li+e1!=0 -> li=F*mui+f (E0*F=0, E0*f=-e0)
-        self.Fs, self.fs, self.Ee1, self.mus_idxs = self.latent_prior(latent_connect, latent_ratio)
-        self.coef_dim = self.mus_idxs[-1][-1]
+        self.Fs, self.fs, self.Ee1, self.mus_idxs = self.latent_prior(latent_connect, latent_ratio, coef_previous)
 
-    def latent_prior(self, latent_connect, latent_ratio):
+    def latent_prior(self, latent_connect, latent_ratio, coef_previous):
         """latent_connect: [[1,2],[3,4],[1,5]]: x1,x2->z1, x3,x4->z2, x1,x5->z3
             x1,x2->z1, weights for x3,x4,x5 are all 0."""
         self.latent_connect = latent_connect + [[i for i in range(1,self.input_dim+1)]]*(self.latent_dim-len(latent_connect)) \
@@ -59,6 +58,11 @@ class LatentLayer(torch.nn.Module):
             F, f = self.solver(E0, -e0)
             Fs.append(F), fs.append(f), Ee1.append([E1, e1]), mus_idxs.append([mu_idx,mu_idx+F.shape[-1]])
             mu_idx = mus_idxs[-1][-1]
+        for i in range(min(len(coef_previous),len(latent_connect))):
+            assert len(coef_previous[i])==Fs[i].shape[-1], "The latent variables previously discovered do not satisfy the connectivity prior!"
+        self.coef_previous = list(np.array(coef_previous).reshape(-1)) if coef_previous!=[] else []
+        self.coef_dim = mus_idxs[-1][-1]
+        assert self.coef_dim>len(self.coef_previous), "The number of latent variables to be searched is 0!"
         return Fs, fs, Ee1, mus_idxs
 
     def solver(self, M, m):
@@ -73,7 +77,7 @@ class LatentLayer(torch.nn.Module):
         bias_vector = np.zeros((col,1))
         for r in range(len(pivot_idx)): # the pivot of r-th row is pivot[r]
             bias_vector[pivot_idx[r],0] = MA_rref[r,-1]/(MA_rref[r,pivot_idx[r]])
-        assert not (np.matmul(M, bias_vector)-m).any(), "The bias vectors v can't satisfy Mv=m."
+        assert abs(np.matmul(M, bias_vector)-m).sum()<1e-6, "The bias vectors v can't satisfy Mv=m."
         bias_vector = torch.tensor(bias_vector, dtype=torch.float32)
         # basis matrix: MV=0
         self.unique = True if rM==col else False
@@ -92,15 +96,15 @@ class LatentLayer(torch.nn.Module):
                 vector[fi] = 1
                 for r in range(len(pivot_idx)): # the pivot of r-th row is pivot[r]
                     vector[pivot_idx[r]] = -M_rref[r,fi]/(M_rref[r,pivot_idx[r]])
-                assert not np.matmul(M, vector).any(), "The basis matrix can't satisfy MV=0."
+                assert abs(np.matmul(M, vector)).sum()<1e-6, "The basis matrix can't satisfy MV=0."
                 basis.append(vector)
             basis_matrix = torch.tensor(np.array(basis).T, dtype=torch.float32)
         return basis_matrix, bias_vector
 
     def update(self, coef:np.array):
         self.coef = coef
-        # if we don't adopt a latent layer, i.e. z=x, we set mu=0, W=eye(p)
-        if coef.any() or len(coef)>1:
+        # if we don't adopt a latent layer, i.e. z=x, we set mu=None, W=eye(p)
+        if not np.isnan(coef).any():
             mu = np.expand_dims(coef, axis=0) if len(coef.shape)==1 else coef
             assert len(mu.shape)==2, "Shape Error."
             # Wi^T=E*(Fi*mui+fi)+e, s.t. E1*(Fi*mui+fi)+e1!=0
@@ -164,8 +168,8 @@ class SymbolicRegression():
         self.d = d          # output unit matrix
         self.units = units  # names of the basic units involved
         self.batch = batch  # number of samples in the dataset
-        constraints1={"/": (-1, -1), "exp": 9, "sin": 9}
-        constraints2={"exp": {"exp":0, "sin":0}, "sin": {"exp":0, "sin":0}}
+        constraints1={"/": (-1, -1), "exp": 5, "sin": 5, "cos":5, "inv":5}
+        constraints2={"exp": {"exp":0, "sin":0, 'cos':0}, "sin": {"exp":0, "sin":0, 'cos':0}, 'cos':{"exp":0, "sin":0, 'cos':0}}
         cstr1 = {key:constraints1[key] for key in constraints1.keys() if key in binary+unary}
         cstr2 = {key:{subkey:constraints2[key][subkey] for subkey in constraints2[key].keys() 
                     if subkey in binary+unary} for key in constraints2.keys() if key in binary+unary}
@@ -198,7 +202,8 @@ class SymbolicRegression():
         idxs = np.random.choice(z.shape[0], min(self.batch,z.shape[0]), replace=False) if self.batch!=-1 else torch.full((z.shape[0],), True, dtype=bool)
         self.model.fit(X=z[idxs], y=y[idxs], variable_names=[f'z_{i+1}' for i in range(z.shape[-1])], X_units=self.z_units, y_units=self.y_units)
         self.express = str(self.model.sympy())
-        self.express = self.express.replace('*','').replace(' ','')
+        # self.express = self.express.replace('*','').replace(' ','')
+        self.express = self.express.replace(' ','')
         for i in range(10):
             self.express = self.express.replace(f'_{i}',sub[i])
         y_hat = self.model.predict(X=z)
@@ -222,15 +227,16 @@ class FINDFrame():
         self.coef_range = self.opt.Structure.c2f.range
         self.sampler = DimlessSampler(norm=self.opt.Structure.express.norm, **self.opt.Dataset)
         self.latent_module = LatentLayer(D=self.D, d=self.d, latent_dim=self.latent_dim, \
-            latent_connect=self.opt.Structure.latent.connect, latent_ratio=self.opt.Structure.latent.ratio)
+            latent_connect=self.opt.Structure.latent.connect, latent_ratio=self.opt.Structure.latent.ratio, \
+            coef_previous=self.opt.Structure.latent.previous)
         self.pr_module = PolynomialRegression(degree=self.degree) if opt.Structure.express.mode=='regression' \
             else INR(degree=self.degree)
         self.sr_module = SymbolicRegression(iter=opt.Structure.sr.iter, binary=opt.Structure.sr.binary, unary=opt.Structure.sr.unary,
                             logger_dir=self.log.logger_dir, D=self.D, d=self.d, units=self.units, batch=self.opt.Structure.sr.batch)
         self.terms = self.get_terms(self.degree, self.latent_dim)
         # dimensionality reduction: W[:,j]=[W1j,W2j,...,Wnj]=c*v, find c rather than W[:,j]
-        self.display_sparse = opt.Structure.latent.sparse
-        self.coef_dim = self.latent_module.coef_dim      
+        self.coef_previous = self.latent_module.coef_previous
+        self.coef_dim = self.latent_module.coef_dim
         self.signs = {}
         self.dataset_limitation()
         self.get_metrics()
@@ -265,8 +271,7 @@ class FINDFrame():
         # remove existing coefficients
         pbar, final_coefs = tqdm(coefs, desc='Removing existing coefficients', leave=True, file=sys.stdout), []
         for coef in pbar:
-            coef = list(coef) if self.opt.Structure.latent.connect!=[] or self.opt.Structure.c2f.fix!=[[]] \
-                else list(np.concatenate([eval(c) for c in eval(coef)],-1))
+            coef = list(coef) if type(coef).__name__!='str' else list(np.concatenate([eval(c) for c in eval(coef)],-1))
             # compare only in coefficient sets with consistent symbols to reduce search time
             sign_code = coef_sign_code(coef)
             if sign_code not in self.signs.keys():
@@ -280,14 +285,6 @@ class FINDFrame():
     def coef_limit(self, coefs):
         '''restrict coefficients based on dataset distribution to reduce search space. coefs: (batch,self.latent_dim*self.coef_dim)'''
         coefs, num_init, time_init = ((coefs*10).astype(np.int32))/10., coefs.shape[0], time.time()
-        # if we have set fixed coefs on the yaml file
-        if self.opt.Structure.c2f.fix!=[] and self.opt.Structure.c2f.fix[0]!=[]:
-            fix_coefs = ((np.array(self.opt.Structure.c2f.fix)*10).astype(np.int32))/10.
-            fix_coefs = [coef.tolist() for coef in fix_coefs]
-            self.opt.Structure.c2f.step = []    # stop searching for other coefficients
-            final_coefs = self.remove_exist(fix_coefs)
-            print(f'It took {time.time()-time_init}s to reduce the search space from {num_init} to {len(final_coefs)} coefficients.')
-            return final_coefs
         # if there's only one solution for unit equation Dx=d
         if self.latent_module.unique:
             self.opt.Structure.c2f.step = []    # stop searching for other coefficients
@@ -297,18 +294,17 @@ class FINDFrame():
             self.latent_module.update(coef=coefs)
             idx1, idx2 = self.latent_module.connect_ratio_limite()
             coefs = coefs[idx1][idx2]
-        # limit n(W)<=k1, n(W_:j)<=k2
-        k1 = int(self.opt.Structure.latent.sparse)
+        # limit n(W)<=k1, n(W_{:,j})<=k2
+        k1 = int(self.opt.Structure.c2f.k1)
         weight = self.latent_module.update(coef=coefs).reshape(coefs.shape[0], -1)
         weight[weight!=0] = 1
         idx1 = weight.sum(-1)<=k1
         coefs = coefs[idx1]
-        k2 = min(max(1, int(self.opt.Structure.c2f.sparse)), self.latent_dim)
-        if self.opt.Structure.latent.dim>=2:
-            weight = self.latent_module.update(coef=coefs)
-            weight[weight!=0] = 1
-            idx2 = ((weight.sum(-2))<=k2).sum(-1)==self.input_dim
-            coefs = coefs[idx2]
+        k2 = min(max(1, int(self.opt.Structure.c2f.k2)), self.input_dim)
+        weight = self.latent_module.update(coef=coefs)
+        weight[weight!=0] = 1
+        idx2 = ((weight.sum(-1))<=k2).sum(-1)==self.latent_dim
+        coefs = coefs[idx2]
         # limit the weight based on the dataset
         weight, idx = self.latent_module.update(coef=coefs), torch.ones(coefs.shape[0], dtype=torch.int32)
         for i in range(self.input_dim):
@@ -316,7 +312,7 @@ class FINDFrame():
                 idx = idx*((weight[:,:,i]==weight[:,:,i].to(torch.int32)).sum(-1)==self.latent_dim)
             if self.limite['zero'][i%self.input_dim]:
                 idx = idx*((weight[:,:,i]>=0).sum(-1)==self.latent_dim)
-        coefs = coefs[idx==1]
+        coefs = coefs[np.nonzero(idx==1)].reshape([-1,coefs.shape[-1]])
         # [[c11,c12,c13],[c21,c22,c23]]~[[c21,c22,c23],[c11,c12,c13]], [[c1,c2],[c1,c2]]~[[c1,c2]], only test one of them and remove [0]^p
         if self.opt.Structure.latent.connect!=[]:
             refine_coefs = coefs
@@ -333,7 +329,7 @@ class FINDFrame():
         print(f'It took {time.time()-time_init}s to reduce the search space from {num_init} to {len(final_coefs)} coefficients.')
         return final_coefs
 
-    def get_metrics(self, step:float=0.1):
+    def get_metrics(self, precision:float=0.1):
         '''read the metrics save in project/metrics/metrics.csv'''
         self.metrics = {'mu':[], 'W':[], 'n(W)':[], 'r2_1':[], 'norm(PR)':[], 'PR':[], 'r2_2':[], 'SR':[]}
         metrics_path = os.path.join(self.log.metric_dir, 'metrics.csv')
@@ -341,9 +337,14 @@ class FINDFrame():
             df = pd.read_csv(metrics_path).sort_values(by="r2_1", ascending=False)
             for i in range(len(df)):
                 weight = eval(df.loc[i,'W'])
-                if sum([int(w*10)%int(step*10) for w in weight])==0:
+                if sum([int(w*10)%int(precision*10) for w in weight])==0:
                     for key in self.metrics.keys():
-                        data = eval(df.loc[i,key]) if type(df.loc[i,key]).__name__=='str' and key not in ['r2_2', 'SR'] else df.loc[i,key]
+                        if not self.opt.Structure.latent.adopt and key=='mu':
+                            data = None
+                        elif type(df.loc[i,key]).__name__=='str' and key not in ['r2_2', 'SR']:
+                            data = eval(df.loc[i,key])
+                        else:
+                            data = df.loc[i,key]
                         self.metrics[key].append(data)
 
     def get_terms(self, n, p):
@@ -370,7 +371,7 @@ class FINDFrame():
         idxs1, idxs2 = express!=0, np.arange(len(terms), dtype=np.int32)[express!=0]
         return express[idxs1], [terms[i] for i in idxs2]
     
-    def performance_display(self, top:int=20, step:float=0.1):
+    def performance_display(self, top:int=20, sparse:int=64, precision:float=0.1):
         '''display the performance'''
         def dis_coef(coef, sign:bool=False, acc:int=2):
             if coef==0:
@@ -379,7 +380,7 @@ class FINDFrame():
             c = f'{int(acc*coef+pn*0.5)/acc}' if (abs(coef)>=1./acc and abs(coef)<10) else '{:.2e}'.format(coef)
             sc = '+'+c if (sign and coef>0) else c
             return sc
-        self.get_metrics(step=step)
+        self.get_metrics(precision=precision)
         mus, Ws, nWs, r2_1, pr, r2_2, sr = self.metrics['mu'], self.metrics['W'], self.metrics['n(W)'], \
             self.metrics['r2_1'], self.metrics['PR'], self.metrics['r2_2'], self.metrics['SR']
         sr_flag = sum([r22!='*' for r22 in self.metrics['r2_2']])>=1
@@ -390,13 +391,13 @@ class FINDFrame():
         for idx in range(len(mus)):
             if len(top_dict['id'])>=top:
                 break
-            if nWs[idx]>self.display_sparse:
+            if nWs[idx]>sparse:
                 continue
-            mu = '['+'_'.join([dis_coef(c, sign=True, acc=1) for c in mus[idx]])+']'
+            mu = '['+'_'.join([dis_coef(c, sign=True, acc=1) for c in mus[idx]])+']' if mus[idx]!=None else 'none'
             W = [dis_coef(c, sign=True, acc=1) for c in Ws[idx]]
             z_term = [sub_sup('x',j+1,W[j+i*self.input_dim]) for i in range(self.latent_dim) for j in range(self.input_dim)]
             z = '_'.join([''.join(z_term[i*self.input_dim:(i+1)*self.input_dim]) for i in range(self.latent_dim)])
-            express, terms = self.simple_express(pr[idx], int(len(mus[idx])/self.coef_dim))
+            express, terms = self.simple_express(pr[idx], int(len(mus[idx])/self.coef_dim)) if mus[idx]!=None else self.simple_express(pr[idx], 1)
             r21, nW, nf = dis_coef(r2_1[idx], acc=4), str(nWs[idx]), str(len(express))
             express_pr = 'y=' + dis_coef(express[0]) if len(express)>0 else 'csv acc error'
             for i in range(1, len(express)):
@@ -410,7 +411,7 @@ class FINDFrame():
                 top_dict[k].append(id_dict[k])
                 info_len[k] = max(info_len[k], len(id_dict[k]))
         info = str([k.ljust(info_len[k],' ') for k in top_dict.keys()])[1:-1].replace('\'','').replace(',', ' |')+ ' |'
-        title = f'Performance {min(top,len(mus))}/{len(mus)} (n(W)<={self.display_sparse})'
+        title = f'Performance {min(top,len(mus))}/{len(mus)} (n(W)<={sparse}, precision={precision})'
         show_info = '-'*len(info) + '\n' + ' '*int((len(info)-len(title))/2) + title + '\n' + '_'*len(info) + '\n' + info + '\n'
         for idx in range(len(top_dict['id'])):
             show_info += str([top_dict[k][idx].ljust(info_len[k],' ') for k in top_dict.keys()])[1:-1].replace('\'','').replace(',', ' |').replace('_',',')+ ' |\n'
@@ -431,17 +432,24 @@ class FINDFrame():
     def grid_initial(self, ):
         '''stage 1: regression for [-m,...,-1,0,1,...,m]^p.  t~(2m+1)^p''' 
         print('\033[1;32m' + '='*60 + ' '*4 + 'GRID INITIALIZATION START' + ' '*4 + '='*60 + '\033[0m')
-        # if we don't adopt a latent layer, i.e. z=x, we set mu=0, W=eye(p)
+        # if we don't adopt a latent layer, i.e. z=x, we set mu=None, W=eye(p)
         if not self.opt.Structure.latent.adopt:
-            coefs = np.zeros((1,1))
+            coefs = np.full((1, 1), np.nan)
+        # if we have set fixed coefs on the yaml file
+        elif self.opt.Structure.c2f.fix!=[] and self.opt.Structure.c2f.fix!=[[]]:
+            fix_coefs = ((np.array(self.opt.Structure.c2f.fix)*10).astype(np.int32))/10.
+            fix_coefs = [coef.tolist() for coef in fix_coefs]
+            coefs = self.remove_exist(fix_coefs)
+            print('Start searching near the given point...')
         else:
             init_step = self.opt.Structure.c2f.init_step
-            shape = [self.coef_range + [int((self.coef_range[-1]-self.coef_range[0])/init_step)+1]]*self.coef_dim
+            shape = [[c, c, 1] for c in self.coef_previous]
+            shape = shape + [self.coef_range + [int((self.coef_range[-1]-self.coef_range[0])/init_step)+1]]*(self.coef_dim-len(self.coef_previous))
             coefs = np.array(create_flattened_coords(shape=shape), dtype=np.float32) if len(shape)!=0 else []
             coefs = self.coef_limit(coefs=coefs)
         self.train(coefs=coefs)
         self.get_metrics()
-        self.performance_display()
+        self.performance_display(**self.opt.Display)
         time_cost = time.time() - self.time_start
         self.log.log_metrics({'stage time':time_cost}, 0)
         print(f'Time Cost: {time_cost}')
@@ -459,8 +467,8 @@ class FINDFrame():
             # if we don't adopt a latent layer, i.e. z=x, we set mu=0, W=eye(p)
             if top_coef==[0]:
                 continue
-            shape = []
-            for c in top_coef:
+            shape = [[c, c, 1] for c in self.coef_previous]
+            for c in top_coef[len(self.coef_previous):]:
                 c_min = c-step if c-step>=self.coef_range[0] else c
                 c_max = c+step if c+step<=self.coef_range[1] else c
                 num = 3 if (c-step>=self.coef_range[0]) and (c+step<=self.coef_range[1]) else 2
@@ -469,7 +477,7 @@ class FINDFrame():
         coefs = self.coef_limit(coefs=np.concatenate(coefs,axis=0)) if coefs!=[] else []
         self.train(coefs=coefs)
         self.get_metrics()
-        self.performance_display()
+        self.performance_display(**self.opt.Display)
         time_cost = time.time() - self.time_start
         self.log.log_metrics({'stage time':time_cost}, id)
         print(f'Time Cost: {time_cost}')
@@ -494,7 +502,7 @@ class FINDFrame():
             pbar.update(1)
         df = pd.DataFrame(data=self.metrics)
         df.to_csv(os.path.join(self.log.metric_dir, 'metrics.csv'), encoding='utf-8')
-        self.performance_display()
+        self.performance_display(**self.opt.Display)
         time_cost = time.time() - self.time_start
         self.log.log_metrics({'stage time':time_cost}, len(self.opt.Structure.c2f.refine_step)+1)
         print(f'Time Cost: {time_cost}')
@@ -540,11 +548,11 @@ class FINDFrame():
                 self.pr2sr(top=top, thres=0.90)
             self.log.close()
         elif mode_dict['mode'] == 'eval':
-            self.performance_display(top=40, step=mode_dict['eval'])
+            self.performance_display(top=mode_dict['top'], sparse=mode_dict['sparse'], precision=mode_dict['eval'])
         elif mode_dict['mode'] == 'refine':
             self.grid_refine(top=10, thres=0.90, step=mode_dict['refine'], id=1)
             if self.opt.Structure.sr.adopt:
                 self.pr2sr(top=10, thres=0.90)
-            self.performance_display(top=40, step=mode_dict['eval'])
+            self.performance_display(top=mode_dict['top'], sparse=mode_dict['sparse'], precision=mode_dict['eval'])
         else:
             raise NotImplemented

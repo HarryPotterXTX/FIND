@@ -1,0 +1,45 @@
+Dataset:
+  data_path: 'dataset/rlc.csv'
+  input_list: ['R', 'L', 'C', 'U', 'w', 'phi0']
+  output_list: ['U/I']
+  # output_list: ['phi0-phi1']
+  D: 0
+  d: 0
+  units: []
+Structure:
+  latent:
+    adopt: true
+    dim: 3
+    norm: false
+    connect: [[1],[2,5],[3,5]]
+    ratio: []
+    previous: []
+  express:
+    mode: regression
+    degree: 5
+    norm: false
+  c2f:
+    range: [-2,2]
+    top: 10
+    k1: 64
+    k2: 16
+    init_step: 2.0
+    refine_step: []
+    fix: [[-1.0,+2.0,+2.0,-1.0,-1.0]] # U/I
+    # fix: [[-2.0,+1.0,+1.0,-2.0,-2.0]] # phi0-phi1
+  sr:
+    adopt: true
+    iter: 40
+    binary: ['+', '-', '*', '/']
+    unary: ['sin', 'inv(x) = 1/x', 'atan', 'sqrt', 'square']
+    batch: 1024
+Display:
+  top: 20
+  sparse: 64
+  precision: 0.1
+Log: 
+  outputs_dir: outputs
+  project_name: rlc
+  time: true
+  stdlog: false
+  tensorboard: true

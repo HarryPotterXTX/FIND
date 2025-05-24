@@ -1,0 +1,48 @@
+Dataset:
+  data_path: dataset/pde_spring.csv
+  input_list: [c, k, m, d0]
+  D: [[ 1.,  1.,  1.,  0.],
+      [ 0.,  0.,  0.,  1.],
+      [-1., -2.,  0.,  0.]]
+  units: ['kg', 'm', 's']
+  # xt=a1*x+a2*xtt -> m/s=a1*m+a2*m/s^2 -> [a1]=s^(-1), [a2]=s
+  # output_list: ['a1']
+  # d: [0, 0, -1]
+  output_list: ['a2']
+  d: [0, 0, 1]
+Structure:
+  latent:
+    adopt: true
+    dim: 1
+    norm: false
+    connect: []
+    ratio: []
+    previous: []
+  express:
+    mode: regression
+    degree: 1
+    norm: true
+  c2f:
+    range: [-2,2]
+    top: 10
+    k1: 64
+    k2: 16
+    init_step: 1.0
+    refine_step: []
+    fix: [[]]
+  sr:
+    adopt: false
+    iter: 100
+    binary: ['+', '-', '*', '/']
+    unary: ['cos', 'exp', 'sin', 'inv(x) = 1/x']
+    batch: -1
+Display:
+  top: 20
+  sparse: 64
+  precision: 0.1
+Log: 
+  outputs_dir: outputs
+  project_name: pde_spring
+  time: true
+  stdlog: false
+  tensorboard: true

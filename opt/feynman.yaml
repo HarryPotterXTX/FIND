@@ -1,0 +1,78 @@
+Dataset:
+  data_path: dataset/feynman.csv
+  input_list:
+  - sigma
+  - theta
+  output_list:
+  - f
+  D:
+  - - 0.0
+    - 0.0
+  - - 0.0
+    - 0.0
+  - - 0.0
+    - 0.0
+  - - 0.0
+    - 0.0
+  - - 0.0
+    - 0.0
+  d:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  units:
+  - m
+  - s
+  - kg
+  - T
+  - V
+Structure:
+  latent:
+    adopt: false
+    dim: 2
+    norm: true
+    connect: []
+    ratio: []
+    previous: []
+  express:
+    mode: regression
+    degree: 2
+    norm: true
+  c2f:
+    range:
+    - -2
+    - 2
+    top: 10
+    k1: 64
+    k2: 16
+    init_step: 2.0
+    refine_step:
+    - 1.0
+    - 0.5
+    fix: []
+  sr:
+    adopt: true
+    iter: 40
+    binary:
+    - +
+    - '-'
+    - '*'
+    - /
+    unary:
+    - exp
+    - inv(x) = 1/x
+    - sqrt
+    - square
+    batch: 1024
+Display:
+  top: 20
+  sparse: 64
+  precision: 0.1
+Log:
+  outputs_dir: outputs
+  project_name: feynmanI.6.2
+  time: true
+  stdlog: false
+  tensorboard: true

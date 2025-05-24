@@ -5,7 +5,7 @@ from utils.FIND import FINDFrame
 from utils.Logger import MyLogger, reproduc
         
 def select_mode():
-    mode_dict = {'eval':args.eval, 'refine':args.refine}
+    mode_dict = {'eval':args.eval, 'refine':args.refine, 'top':args.top, 'sparse':args.sparse}
     if os.path.exists(args.d):
         mode_dict['mode'] = 'eval' if args.refine==0 else 'refine'
         opt_dir = os.path.join(args.d, 'scripts')
@@ -39,10 +39,11 @@ def main():
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='batch discovery')
-    parser.add_argument('-p', type=str, default='opt/toy.yaml', help='config file path')
+    parser.add_argument('-p', type=str, default='opt/rlc.yaml', help='config file path')
     parser.add_argument('-d', type=str, default='outputs/dir', help='evaluate or refine dir')
     parser.add_argument('-eval', type=float, default=0.1, help='evaluate precision')
     parser.add_argument('-refine', type=float, default=0.0, help='refine step')
-    parser.add_argument('-sparse', type=int, default=20, help='sparsity of displayed weights')
+    parser.add_argument('-top', type=int, default=20, help='number of displayed coefficients')
+    parser.add_argument('-sparse', type=int, default=20, help='sparsity of displayed coefficients')
     args = parser.parse_args()
     main()

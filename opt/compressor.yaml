@@ -1,0 +1,56 @@
+Dataset:
+  data_path: 'dataset/compressor/compressor-deltap.csv'
+  input_list: ['H', 'DeltaT', 'L', 'T0', 'lambda1', 'lambda2']
+  output_list: ['Deltap']
+  D: [[ 1.,  0.,  1.,  0.,  1.,  1.],
+      [ 0.,  1.,  0.,  1.,  0.,  0.]]
+  d: 0
+  units: ['m', 'K']
+
+  # data_path: 'dataset/compressor/compressor-velocity-hydrogen.csv'
+  # # data_path: 'dataset/compressor/compressor-velocity-nitrogen.csv'
+  # # data_path: 'dataset/compressor/compressor-velocity-air.csv'
+  # input_list: ['H', 'DeltaT', 'L', 'lambda', 'T0']
+  # output_list: ['Up']
+  # # output_list: ['Ut']
+  # D: [[ 1.,  0.,  1.,  1.,  0.],
+  #     [ 0.,  1.,  0.,  0.,  1.]]
+  # d: 0
+  # units: ['m', 'K']
+
+Structure:
+  latent:
+    adopt: true
+    dim: 1
+    norm: true
+    connect: []
+    ratio: []
+    previous: []
+  express:
+    mode: regression
+    degree: 1
+    norm: false
+  c2f:
+    range: [-2,2]
+    top: 10
+    k1: 64
+    k2: 16
+    init_step: 2.0
+    refine_step: [1.0, 0.5]
+    fix: [[]]
+  sr:
+    adopt: false
+    iter: 100
+    binary: ['+', '-', '*', '/']
+    unary: ['cos', 'exp', 'sin', 'inv(x) = 1/x']
+    batch: -1
+Display:
+  top: 20
+  sparse: 64
+  precision: 0.1
+Log: 
+  outputs_dir: outputs
+  project_name: compressor-deltap
+  time: true
+  stdlog: false
+  tensorboard: true
