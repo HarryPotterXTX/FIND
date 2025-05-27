@@ -13,7 +13,11 @@ from utils.Inr import INR, cal_r2
 from utils.Samplers import DimlessSampler, create_flattened_coords
 
 sub = {i:chr(ord('\u2080')+i) for i in range(10)}
-sup =  {**{0:'\u2070'},**{1:'',2:'\u00B2',3:'\u00B3'},**{i:chr(ord('\u2070')+i) for i in range(4,10)}}
+sup =  {**{0:'\u2070'},**{1:'\u00B9',2:'\u00B2',3:'\u00B3'},**{i:chr(ord('\u2070')+i) for i in range(4,10)}}
+for i in range(10,31):
+    sub[i] = sub[i//10] + sub[i%10]
+    sup[i] = sup[i//10] + sup[i%10]
+sup[1] = ''
 sup_map = str.maketrans("0123456789+-.", "\u2070\u00B9\u00B2\u00B3"+"".join([chr(ord('\u2070')+i) for i in range(4,10)])+"\u207A\u207B\u02D9")
 sub_map = str.maketrans("0123456789", ''.join([chr(ord('\u2080')+i) for i in range(10)]))
 def sub_sup(var:str='x', sub:str='', sup:str=''):
@@ -405,7 +409,7 @@ class FINDFrame():
             express_pr = express_pr[:100]+'...' if len(express_pr)>100 else express_pr
             id_dict = {'id':str(idx), chr(956):mu, f'z=f{sub[1]}(x)':z, 'n(W)':nW, 'n(pr)':nf, f'R{sup[2]}{sub[1]}':r21, f'PR: y=f{sub[2]}(z)':express_pr}
             if sr_flag:
-                r22, express_sr = dis_coef(eval(str(r2_2[idx])), acc=4) if r2_2[idx]!='*' else '*', sr[idx]
+                r22, express_sr = dis_coef(eval(str(r2_2[idx])), acc=4) if r2_2[idx]!='*' else '*', str(sr[idx])
                 id_dict[f'R{sup[2]}{sub[2]}'], id_dict[f'SR: y=f{sub[2]}(z)'] = r22, express_sr
             for k in top_dict.keys():
                 top_dict[k].append(id_dict[k])
@@ -495,7 +499,8 @@ class FINDFrame():
             self.metrics['r2_2'], self.metrics['SR'] = ['*']*len(self.metrics['mu']), ['*']*len(self.metrics['mu'])
         for i in pbar:
             if self.metrics['r2_2'][i]=='*':
-                W = self.latent_module.update(coef=np.array(top_coefs[i])).reshape(self.latent_dim, self.input_dim)
+                top_coef = np.array(top_coefs[i]) if top_coefs[i]!=None else np.full((1, 1), np.nan)
+                W = self.latent_module.update(coef=top_coef).reshape(self.latent_dim, self.input_dim)
                 z = self.latent_module(x) 
                 express, r2 = self.sr_module.fit(z=z, y=y, W=W)
                 self.metrics['r2_2'][i], self.metrics['SR'][i] = r2, express
