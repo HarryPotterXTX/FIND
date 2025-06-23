@@ -18,11 +18,11 @@ Our proposed method, FIND (Formulas IN Data), is a novel data-driven approach fo
 
 **Parameter Constraint.** We constrain the search space using dimensional analysis, dataset patterns, and model architecture.
 - Dimensional Invariance: We perform dimensional analysis on variables to constrain the parameter search space through unit consistency requirements, thereby deriving physically meaningful expressions.
-- structural Constraints: We impose constraints on the model from data instance characteristics, weight equivalence, and parameter sparsity, which significantly reduces the search space.
+- Structural Constraints: We impose constraints on the model from data instance characteristics, weight equivalence, and parameter sparsity, which significantly reduces the search space.
 
 **Parameter Optimization.** We propose two efficient optimization algorithms.
-- Coarse to Fine (C2F) Search: We propose a C2F grid search strategy, which reduces the likelihood of converging to local optima by progressively refining the solution space. This approach efficiently locates the global optimum while ensuring interpretable and human-intuitive results.
-- Multi-Level Optimization: We propose a multi-stage optimization algorithm for searching multi-latent-variable models. By fixing previously optimized latent variables and incrementally searching for new ones, this approach achieves significant reduction in search space while maintaining competitive performance metrics.
+- Coarse-to-Fine (C2F) Search: We propose a C2F grid search strategy, which reduces the likelihood of converging to local optima by progressively refining the solution space. This approach efficiently locates the global optimum while ensuring interpretable and human-intuitive results.
+- Multi-Level Optimization: We propose a multi-level optimization algorithm for searching multi-latent-variable models. By fixing previously optimized latent variables and incrementally searching for new ones, this approach achieves significant reduction in search space while maintaining competitive performance metrics.
 
 **Expression Simplification.** If the final derived expression is overly complex, symbolic regression is applied to simplify the polynomial into a more compact form. 
 
