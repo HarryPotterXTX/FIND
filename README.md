@@ -54,8 +54,8 @@ All datasets used in this paper are available in [dataset/dataset.yaml](dataset/
 
 ### 3. PDE Discovery
 
-    python dataset/pde_rlc.py
-    python main.py -p opt/pde_rlc.yaml
+    python dataset/pde_spring.py
+    python main.py -p opt/pde_spring.yaml
 
 <div>
     <img src="docs/fig4.png" style="display: inline-block; width: 600px;">
