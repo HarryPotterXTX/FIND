@@ -1,4 +1,4 @@
-# Data-Driven Scientific Discovery with Buckingham $\Pi$ Theorem and Taylor's Theorem
+# Accelerating Data-Driven Scientific Discovery through Buckingham $\Pi$ Theorem and Taylor's Theorem
 
 <div>
     <img src="docs/fig1.png" style="display: inline-block; width: 600px;">
@@ -8,15 +8,15 @@
 
 Our proposed method, FIND (Formulas IN Data), is a novel data-driven approach for discovering implicit mathematical formulas from diverse datasets.
 
-**Explainable Structure.** Inspired by the Buckingham $\Pi$ theorem and Taylor's theorem, FIND introduces a two-level explainable structure:
-- Based on the $\Pi$ theorem, a latent layer is designed to discover key latent variables and achieve data dimensionality reduction.
-- Based on Taylor's theorem, an expression layer is designed to discover functional relationships between latent variables and outputs, using polynomials as temporary approximations of the original function.
+**Explainable Structure.** Inspired by the Buckingham $\Pi$ theorem and Taylor's theorem, FIND introduces a two-stage explainable structure:
+- Based on the $\Pi$ theorem, a latent layer is designed to discover the latent variables and achieve dimensionality reduction.
+- Based on Taylor's theorem, an expression layer is designed to discover the relationship between the latent variables and the output, using polynomials as temporary approximations of the target function.
 
 **Structure Identification.** We conducted a prior analysis on the dataset to identify some structural information.
 - Input Identification: We employ SHAP values to quantify input feature contributions, retaining only high-impact inputs to effectively reduce the search space.
 - Latent Identification: We propose a latent structure identification method tailored for dense datasets, which can directly estimate relevant inputs, the number of latent variables, the connection relationships between inputs and latent variables, as well as weight ratios estimation based on the dataset.
 
-**Parameter Constraint.** We constrain the search space using dimensional analysis, dataset patterns, and model architecture.
+**Parameter Constraints.** We constrain the search space using dimensional analysis, dataset patterns, and model architecture.
 - Dimensional Invariance: We perform dimensional analysis on variables to constrain the parameter search space through unit consistency requirements, thereby deriving physically meaningful expressions.
 - Structural Constraints: We impose constraints on the model from data instance characteristics, weight equivalence, and parameter sparsity, which significantly reduces the search space.
 
@@ -52,7 +52,7 @@ All datasets used in this paper are available in [dataset/dataset.yaml](dataset/
     <img src="docs/fig3.png" style="display: inline-block; width: 600px;">
 </div>
 
-### 3. PDE Discovery
+### 3. PDEs Discovery
 
     python dataset/pde_spring.py
     python main.py -p opt/pde_spring.yaml
@@ -61,7 +61,7 @@ All datasets used in this paper are available in [dataset/dataset.yaml](dataset/
     <img src="docs/fig4.png" style="display: inline-block; width: 600px;">
 </div>
 
-### 4. Latent Structure Identification
+### 4. Critical Parameters Identification
 
     python dataset/rlc.py
     python identify_latent.py
