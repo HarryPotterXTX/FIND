@@ -1,4 +1,4 @@
-# Accelerating Data-Driven Scientific Discovery through Buckingham $\Pi$ Theorem and Taylor's Theorem
+# A Unified Data-Driven Framework for Efficient Scientific Discovery
 
 <div>
     <img src="docs/fig1.png" style="display: inline-block; width: 600px;">
