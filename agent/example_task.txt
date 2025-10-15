@@ -1,0 +1,11 @@
+I have a dataset dataset/solar.csv, help me find the variable with the highest contribution to Gravity.
+
+I think the first six variables are suitable as inputs. Please set the input list to them and set the output to the prediction variable.
+
+Use FIND to search formulas
+
+The formula we discovered is y=x1^2/x3. Based on your background knowledge, derive and verify the rationality of this formula.
+
+Now I am not considering the units of the inputs and outputs. Please use FIND to attempt to discover other formulas.
+
+The formula we discovered is y=x1*x6^{0.5}.

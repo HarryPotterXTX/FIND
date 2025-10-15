@@ -3,3 +3,12 @@ pandas
 tqdm
 scikit-learn
 tensorboard
+shap
+pysr
+dashscope
+matplotlib
+tabulate
+langgraph
+langchain[anthropic]
+langchain_community
+langchain_tavily

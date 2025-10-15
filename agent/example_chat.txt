@@ -1,0 +1,3 @@
+What is the dimensional matrix when Mass, Diameter, Density, Gravity, and Escape Velocity are taken as inputs?
+
+I obtained the formula $v_e=1.14e^{-5}d\sqrt{\rho}$ from the planetary dataset, where $v_e$ is the escape velocity, d is the planet diameter, and $\rho$ is the planet density. Can you help me deduce and explain why this formula exists.

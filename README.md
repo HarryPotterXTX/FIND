@@ -1,4 +1,4 @@
-# A Unified Data-Driven Framework for Efficient Scientific Discovery
+# Agent-Assisted Scientific Discovery with Data-Driven Ultra-Shallow Architectures
 
 <div>
     <img src="docs/fig1.png" style="display: inline-block; width: 600px;">
@@ -8,7 +8,11 @@
 
 Our proposed method, FIND (Formulas IN Data), is a novel data-driven approach for discovering implicit mathematical formulas from diverse datasets.
 
-**Explainable Structure.** Inspired by the Buckingham $\Pi$ theorem and Taylor's theorem, FIND introduces a two-stage explainable structure:
+**Agent-Assisted Scientific Discovery.** A conversational agent and a task-specific agent were developed to facilitate scientific discovery:
+- conversational agent: This system supports conversational execution of tasks (e.g., dimensional matrix operations and formula checks) by combining LLM knowledge with web retrieval.
+- task-specific agent: This system enables conversational interaction and task execution capabilities for hyperparameter tuning, data analysis, formula discovery/simplification/validation, and failure analysis.
+
+**Explainable Structure.** Inspired by the Buckingham $\Pi$ theorem and Taylor's theorem, FIND introduces an ultra-shallow architectures:
 - Based on the $\Pi$ theorem, a latent layer is designed to discover the latent variables and achieve dimensionality reduction.
 - Based on Taylor's theorem, an expression layer is designed to discover the relationship between the latent variables and the output, using polynomials as temporary approximations of the target function.
 
@@ -29,11 +33,12 @@ Our proposed method, FIND (Formulas IN Data), is a novel data-driven approach fo
 ## Requirements
     conda create -n find python=3.9
     conda activate find
-    conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
     pip install -r requirements.txt
 
+Install [PyTorch](https://pytorch.org/get-started/locally/) according to your configuration.
+
 ## Getting Started
-All datasets used in this paper are available in [dataset/dataset.yaml](dataset/dataset.yaml), the experiment hyperparameters are specified in [opt/config.yaml](opt/config.yaml), and the results are provided at [https://cloud.tsinghua.edu.cn/d/510f1ee5329e4cb38a23/](https://cloud.tsinghua.edu.cn/d/510f1ee5329e4cb38a23/).
+All datasets used in this paper are available in `dataset/dataset.yaml`, the experiment hyperparameters are specified in `opt/config.yaml`, and the results are provided at [https://cloud.tsinghua.edu.cn/d/510f1ee5329e4cb38a23/](https://cloud.tsinghua.edu.cn/d/510f1ee5329e4cb38a23/).
 
 ### 1. Physical Laws Discovery
 
@@ -61,7 +66,7 @@ All datasets used in this paper are available in [dataset/dataset.yaml](dataset/
     <img src="docs/fig4.png" style="display: inline-block; width: 600px;">
 </div>
 
-### 4. Critical Parameters Identification
+### 4. Structure Identification
 
     python dataset/rlc.py
     python identify_latent.py
@@ -70,6 +75,33 @@ All datasets used in this paper are available in [dataset/dataset.yaml](dataset/
 
 <div>
     <img src="docs/fig5.png" style="display: inline-block; width: 600px;">
+</div>
+
+### 5. Agent-Assisted Scientific Discovery
+
+#### a. Conversational Agent 
+
+    python agent/agent_chat.py
+
+It talks and informs, but can't act. See `agent/example_chat.txt` for some prompt examples.
+
+#### b. Task-Specific Agent
+
+    python agent/agent_task.py
+
+This kind of agent can support your work in the following ways:
+
+*   **Hyperparameter Analysis:** The agent will analyze function of each hyperparameter in the `opt/config.yaml` file.
+*   **Parameter Setting:** The agent can modify the hyperparameters of FIND according to the user's specific requirements.
+*   **Structure Identification:** The agent can assist in performing data analysis with SHAP.
+*   **Formula Discovery:** The agent can use FIND to discover potential mathematical formulas.
+*   **Formula Simplification:** If the mined formula is overly complex, the user can request the agent to simplify it.
+*   **Theoretical Verification:** We utilize the LLM's built-in domain knowledge and web search to verify the validity of the formulas.
+*   **Failure Analysis:** If high-quality formulas cannot be found, the agent can analyze the reasons for the failure and adjust the strategy.
+*   **Experimental Report:** The agent can summarize the entire experiment and modify and improve it according to user requirements.
+
+<div>
+    <img src="docs/fig6.png" style="display: inline-block; width: 600px;">
 </div>
 
 ## Citations
