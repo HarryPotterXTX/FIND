@@ -1,4 +1,4 @@
-# Agent-Assisted Scientific Discovery with Data-Driven Ultra-Shallow Architectures
+# Accelerating Data-driven Scientific Discovery with a Grounded AI Agent
 
 <div>
     <img src="docs/fig1.png" style="display: inline-block; width: 600px;">
@@ -17,8 +17,8 @@ Our proposed method, FIND (Formulas IN Data), is a novel data-driven approach fo
 - Based on Taylor's theorem, an expression layer is designed to discover the relationship between the latent variables and the output, using polynomials as temporary approximations of the target function.
 
 **Structure Identification.** We conducted a prior analysis on the dataset to identify some structural information.
-- Input Identification: We employ SHAP values to quantify input feature contributions, retaining only high-impact inputs to effectively reduce the search space.
-- Latent Identification: We propose a latent structure identification method tailored for dense datasets, which can directly estimate relevant inputs, the number of latent variables, the connection relationships between inputs and latent variables, as well as weight ratios estimation based on the dataset.
+- Input Variable Identification: We employ SHAP values to quantify input feature contributions, retaining only high-impact inputs to effectively reduce the search space.
+- Latent Variable Identification: We propose a latent structure identification method tailored for dense datasets, which can directly estimate relevant inputs, the number of latent variables, the connection relationships between inputs and latent variables, as well as weight ratios estimation based on the dataset.
 
 **Parameter Constraints.** We constrain the search space using dimensional analysis, dataset patterns, and model architecture.
 - Dimensional Invariance: We perform dimensional analysis on variables to constrain the parameter search space through unit consistency requirements, thereby deriving physically meaningful expressions.
@@ -28,7 +28,7 @@ Our proposed method, FIND (Formulas IN Data), is a novel data-driven approach fo
 - Coarse-to-Fine (C2F) Search: We propose a C2F grid search strategy, which reduces the likelihood of converging to local optima by progressively refining the solution space. This approach efficiently locates the global optimum while ensuring interpretable and human-intuitive results.
 - Multi-Level Optimization: We propose a multi-level optimization algorithm for searching multi-latent-variable models. By fixing previously optimized latent variables and incrementally searching for new ones, this approach achieves significant reduction in search space while maintaining competitive performance metrics.
 
-**Expression Simplification.** If the final derived expression is overly complex, symbolic regression is applied to simplify the polynomial into a more compact form. 
+**Formula Simplification.** If the final derived expression is overly complex, symbolic regression is applied to simplify the polynomial into a more compact form. 
 
 ## Requirements
     conda create -n find python=3.9
@@ -92,7 +92,7 @@ It talks and informs, but can't act. See `agent/example_chat.txt` for some promp
 This kind of agent can support your work in the following ways:
 
 *   **Hyperparameter Analysis:** The agent will analyze function of each hyperparameter in the `opt/config.yaml` file.
-*   **Parameter Setting:** The agent can modify the hyperparameters of FIND according to the user's specific requirements.
+*   **Hyperparameter Setting:** The agent can modify the hyperparameters of FIND according to the user's specific requirements.
 *   **Structure Identification:** The agent can assist in performing data analysis with SHAP.
 *   **Formula Discovery:** The agent can use FIND to discover potential mathematical formulas.
 *   **Formula Simplification:** If the mined formula is overly complex, the user can request the agent to simplify it.

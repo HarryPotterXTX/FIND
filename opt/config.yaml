@@ -4,7 +4,7 @@ Dataset:
   input_list: input list
   output_list: output list
   D: (unit_dim, in_dim), dimension matrix for input list (D=0 means not considering physical dimensions)
-  d: (unit_dim), dimension matrix for output list (d=0 means not considering physical dimensions)
+  d: (unit_dim), dimension matrix for output list (d=0 means not considering physical dimensions). If you want to find dimensionless numbers, set d to 0
   units: basic units involved. eg. [], ['kg','m','s','K','A','cd','mol']. (units=0 means not considering physical dimensions)
 # structure: x-(latent layer)->z-(express layer)->y
 # latent layer: C2F search

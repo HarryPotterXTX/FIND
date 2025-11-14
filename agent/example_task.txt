@@ -7,5 +7,3 @@ Use FIND to search formulas
 The formula we discovered is y=x1^2/x3. Based on your background knowledge, derive and verify the rationality of this formula.
 
 Now I am not considering the units of the inputs and outputs. Please use FIND to attempt to discover other formulas.
-
-The formula we discovered is y=x1*x6^{0.5}.

@@ -27,7 +27,9 @@ def identify_input(data_path:str, output:str) -> str:
         next: Recommendation for next step processing.
     """
     data = pd.read_csv(data_path)
-    input_list = data.select_dtypes(include=['int', 'float']).columns.tolist()[1:]
+    input_list = data.select_dtypes(include=['int', 'float']).columns.tolist()
+    if 'Unnamed: 0' in input_list:
+        input_list.remove('Unnamed: 0')
     input_list.remove(output)
     output_list = [output]
     D = 0
@@ -50,8 +52,7 @@ def identify_input(data_path:str, output:str) -> str:
 
     prompt = 'Ask the user what to do next. Suggested question: Shall I proceed \
         to set the input list as the top 5 variables with the highest contribution, \
-        or would you prefer to manually select which variables to use as inputs? \
-        Additionally, the output will be set to the variable you have chosen for prediction.'
+        or would you prefer to manually select which variables to use as inputs?'.replace('  ','')
     return sorted_input_list, sorted_shap_list, prompt
 
 @tool
@@ -66,20 +67,24 @@ def understand():
         prompt (str): Prompt for LLM to understand how to modify the parameters according to user requirements.
         next (str): Recommendation for next step processing.
     """
-    prompt = 'Read and remember the following configuration instructions. ' \
-        'If the user has any needs, modify the corresponding variables accordingly.\n' + str(OmegaConf.load('opt/config.yaml'))
-    next = 'Ask the user what to do next. Suggested question: You can provide \the location of the dataset and the variable to be predicted, and then we will proceed to the next step.'
+    prompt = 'Read and remember the following configuration instructions. If the user \
+        has any needs, modify the corresponding variables accordingly.\n'.replace('  ','') \
+        + str(OmegaConf.load('opt/config.yaml'))
+    next = 'Ask the user what to do next. Suggested question: You can provide \
+        the location of the dataset and the variable to be predicted, and then \
+        we will proceed to the next step.'.replace('  ','')
     opt = OmegaConf.load('opt/agent_template.yaml')
     OmegaConf.save(opt, 'opt/agent_instance.yaml', resolve=True)
     return prompt, next
 
 @tool
-def modify_parameter(data_path:str, keys:List[str], value:Any):
+def modify_parameter(data_path:str, output:str, keys:List[str], value:Any):
     """
     Modify the corresponding parameters in the opt/agent_instance.yaml.
 
     Args:
         data_path (str): dataset csv path.
+        output (str): the variable to be predicted.
         keys (List[str]): Key list of the variable.
         value (Any): The new value to which the variable is to be modified. 
 
@@ -97,21 +102,20 @@ def modify_parameter(data_path:str, keys:List[str], value:Any):
 
     config_path = 'opt/agent_instance.yaml'
     opt = OmegaConf.load(config_path)
-    set_nested_attr(opt, keys=keys, value=value)
     # Get dimensional matrix
-    opt.Dataset.data_path = data_path
     unit_path = os.path.join('dataset_units', os.path.basename(data_path).split('.')[0]+'.yaml')
     if os.path.exists(unit_path):
         unit_opt = OmegaConf.load(unit_path)
-    if keys==['Dataset', 'input_list']:
         opt.Dataset.units = unit_opt.units
-        opt.Dataset.D = np.array([unit_opt.dimensional[var] for var in value]).T.tolist()
-    elif keys==['Dataset', 'output_list']:
-        opt.Dataset.units = unit_opt.units
-        opt.Dataset.d = unit_opt.dimensional[value[0]]
+        opt.Dataset.d = unit_opt.dimensional[output]
+        if keys==['Dataset', 'input_list']:
+            opt.Dataset.D = np.array([unit_opt.dimensional[var] for var in value]).T.tolist()
     # Fix output dir
+    opt.Dataset.data_path = data_path
+    opt.Dataset.output_list = [output]
     opt.Log.project_name = 'agent'
     opt.Log.time = False
+    set_nested_attr(opt, keys=keys, value=value)
     OmegaConf.save(opt, 'opt/agent_instance.yaml', resolve=True)
     return True
 
@@ -166,12 +170,14 @@ def find():
         next = f'The obtained optimal coefficient is {coef}, and the formula is {formula}. \
             The formula complexity is {cf}, which is quite complex. Do you want to fix the \
             coefficients (Structure.c2f.fix={[coef]}) and simplify the formula using symbolic \
-            regression (Structure.sr.adopt=True)?'
+            regression (Structure.sr.adopt=True)?'.replace('  ','')
     else:
         next = f'The obtained optimal coefficient is {coef}, and the formula is {formula}. \
-            Would you like me to help you theoretically derive this formula to verify its rationality and reliability?'
+            Would you like me to help you theoretically derive this formula to verify its \
+            rationality and reliability?'.replace('  ','')
     if r2<0.95:
-        next = f'The R2 metric of the formula is too low. Please try to analyze the reasons for the failure in data mining.'
+        next = f'The R2 metric of the formula is too low. Please try to analyze the reasons \
+            for the failure in data mining.'.replace('  ','')
     return coef, formula, cf, r2, next
 
 def get_performance_sr():
@@ -229,7 +235,7 @@ def sr(coef:List[float]):
     next = f'The obtained symbolic expression is {formula}. \
         Compare polynomial expressions and symbolic expressions, \
         recommend the best one between the two to the user, and \
-        then verify the formula.'
+        then verify the formula.'.replace('  ','')
     return formula, r2, next
 
 @tool
@@ -252,11 +258,10 @@ def verify(formula:str, r2:float):
         prompt = f'The formula we discovered is {formula}, \
             where y is the {output}, x corresponds to {input_list}. \
             Based on your background knowledge, derive and verify \
-            the rationality of this formula.'
-        # prompt = f'The obtained formula is {formula}, where x corresponds to {input_list}.\
-        #     Please try to derive this formula and explain its meaning.'
+            the rationality of this formula.'.replace('  ','')
     else:
-        prompt = f'The R2 metric of the formula is too low. Please try to analyze the reasons for the failure in data mining.'
+        prompt = f'The R2 metric of the formula is too low. Please try \
+            to analyze the reasons for the failure in data mining.'.replace('  ','')
     return prompt
 
 @tool
@@ -280,7 +285,7 @@ def failure_analysis():
         analyze whether there is correlation between the inputs and outputs. If a correlation \
         exists, you can then recommend whether to adjust parameters such as the number of input \
         variables or latent variables. The current input variables are {input_list}, and the number of \
-        latent variables is {latent_dim}. Alternatively, you can recommend data cleaning procedures.'
+        latent variables is {latent_dim}. Alternatively, you can recommend data cleaning procedures.'.replace('  ','')
     return prompt
 
 @tool
@@ -295,7 +300,7 @@ def conclusion():
     """
     prompt = f'Summarize the experimental results, including: dataset location, \
         selected inputs and outputs, discovered formulas, corresponding R2 indicators, \
-        and formula validation reasoning steps. Generate a paragraph in Word format'
+        and formula validation reasoning steps. Generate a paragraph in Word format'.replace('  ','')
     return prompt
 
 tools = [TavilySearch(max_results=2), understand, modify_parameter, identify_input, find, sr, verify, failure_analysis, conclusion]

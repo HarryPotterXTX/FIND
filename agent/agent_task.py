@@ -10,7 +10,6 @@ from langchain_community.chat_models import ChatTongyi
 from langgraph.prebuilt import ToolNode, tools_condition
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "../..")))
-# from agent.tools import identify_input, understand, modify_parameter, find
 from agent.tools import tools
 
 # APIs
@@ -23,13 +22,6 @@ llm = ChatTongyi(
     api_key=os.getenv("LLM_API_KEY")
 )
 
-# Tools
-# tool1 = TavilySearch(max_results=2)
-# tool2 = identify_input
-# tool3 = understand
-# tool4 = modify_parameter
-# tool5 = find
-# tools = [tool1, tool2, tool3, tool4, tool5]
 llm_with_tools = llm.bind_tools(tools)
 
 # Configuration
@@ -74,15 +66,10 @@ workflow = 'The standard workflow consists of the following steps: \
     6. Analyze potential causes of failures; \
     7. Generate an experimental report.'
 
-# prompt = f'You are an AI scientist who can extract formulas from data. \
-#     I will ask some questions or requests, please provide a brief answer. \
-#     After each time you call a tool, you need to pause and suggest to the user what to do next. \
-#     First, Please understand and memorize the meaning of each hyperparameter \
-#     in opt/config.yaml to facilitate subsequent hyperparameter modifications.'
-
 prompt = f'You are an AI scientist who can extract formulas from data. \
     I will ask some questions or requests, please provide a brief answer. \
-    After each time you call a tool, you need to pause and suggest to the user what to do next. {workflow}'
+    After each time you call a tool, you need to pause and suggest to the \
+    user what to do next. {workflow}'.replace('  ','')
 
 stream_graph_updates(prompt)
 
