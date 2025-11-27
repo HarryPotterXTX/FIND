@@ -1,4 +1,4 @@
-# Accelerating Data-driven Scientific Discovery with a Grounded AI Agent
+# Accelerating the Discovery of Governing Physical Laws with a Grounded AI Agent
 
 <div>
     <img src="docs/fig1.png" style="display: inline-block; width: 600px;">
@@ -38,9 +38,9 @@ Our proposed method, FIND (Formulas IN Data), is a novel data-driven approach fo
 Install [PyTorch](https://pytorch.org/get-started/locally/) according to your configuration.
 
 ## Getting Started
-All datasets used in this paper are available in `dataset/dataset.yaml`, the experiment hyperparameters are specified in `opt/config.yaml`, and the results are provided at [https://cloud.tsinghua.edu.cn/d/510f1ee5329e4cb38a23/](https://cloud.tsinghua.edu.cn/d/510f1ee5329e4cb38a23/).
+All datasets used in this paper are available in `dataset/dataset.yaml`, the experiment hyperparameters are specified in `opt/config.yaml`.
 
-### 1. Physical Laws Discovery
+### 1. Astronomical Laws Discovery
 
     python identify_input.py 
     python main.py -p opt/solar.yaml
@@ -79,6 +79,9 @@ All datasets used in this paper are available in `dataset/dataset.yaml`, the exp
 
 ### 5. Agent-Assisted Scientific Discovery
 
+<video width="600px" controls>
+  <source src="docs/example.mp4" type="video/mp4">
+</video>
 #### a. Conversational Agent 
 
     python agent/agent_chat.py

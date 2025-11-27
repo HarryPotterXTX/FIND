@@ -56,20 +56,20 @@ def stream_graph_updates(user_input: str):
     for event in events:
         event["messages"][-1].pretty_print()
 
-workflow = 'The standard workflow consists of the following steps: \
-    0. Understand the meaning of each hyperparameter in opt/config.yaml; \
-    1. Enter the dataset path and the variable to be predicted; \
-    2. Identify and select the most critical variables as inputs with SHAP; \
-    3. Utilize the FIND module to discover formulas from the data; \
-    4. If the formulas are overly complex, invoke the SR module to simplify them; \
-    5. Validate the derived formulas; \
-    6. Analyze potential causes of failures; \
-    7. Generate an experimental report.'
+workflow = """The standard workflow consists of the following steps: 
+0. Understand the meaning of each hyperparameter in opt/config.yaml; 
+1. Enter the dataset path and the variable to be predicted; 
+2. Identify and select the most critical variables as inputs with SHAP; 
+3. Utilize the FIND module to discover formulas from the data; 
+4. If the formulas are overly complex, invoke the SR module to simplify them; 
+5. Validate the derived formulas; 
+6. Analyze potential causes of failures; 
+7. Generate an experimental report."""
 
-prompt = f'You are an AI scientist who can extract formulas from data. \
-    I will ask some questions or requests, please provide a brief answer. \
-    After each time you call a tool, you need to pause and suggest to the \
-    user what to do next. {workflow}'.replace('  ','')
+prompt = f"""You are an AI scientist who can extract formulas from data. 
+I will ask some questions or requests, please provide a brief answer. 
+After each time you call a tool, you need to pause and suggest to the 
+user what to do next. {workflow}"""
 
 stream_graph_updates(prompt)
 
