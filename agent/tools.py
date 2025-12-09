@@ -29,11 +29,9 @@ def identify_input(data_path:str, output:str, exclude:list[str]=[]) -> str:
     """
     data = pd.read_csv(data_path)
     input_list = data.select_dtypes(include=['int', 'float']).columns.tolist()
-    if 'Unnamed: 0' in input_list:
-        input_list.remove('Unnamed: 0')
-    for ex in exclude:
-        input_list.remove(ex)
-    input_list.remove(output)
+    for ex in ['Unnamed: 0', output] + exclude:
+        if ex in input_list:
+            input_list.remove(ex)
     output_list = [output]
     D = 0
     X, Y, input_list, units = InputCombination(data_path, input_list, output_list, D, origin=True, mixed=True, only_binary=True)
@@ -72,9 +70,9 @@ def understand():
     """
     prompt = """Read and remember the following configuration instructions. If the user 
 has any needs, modify the corresponding variables accordingly.\n""" + str(OmegaConf.load('opt/config.yaml'))
-    next = """Ask the user what to do next. Suggested question: You can provide 
-the location of the dataset and the variable to be predicted, and then 
-we will proceed to the next step."""
+    next = """Ask the user what to do next. Suggested question: You can provide the location 
+of the dataset and the variable to be predicted, and then we will proceed to the next step. 
+If it is a PDE discovery task, simply call SINDy to discover PDEs without recommendation."""
     opt = OmegaConf.load('opt/agent_template.yaml')
     OmegaConf.save(opt, 'opt/agent_instance.yaml', resolve=True)
     return prompt, next
@@ -431,7 +429,7 @@ def generate_scientific_report(
     discovered_formulas: List[Dict[str, Any]],
     derivation_verification: str,
     failure_analysis: str = "",
-    researcher: str = "Agent FIND"
+    researcher: str = "AgentFIND"
 ) -> str:
     """
     Generate a scientific experiment report in specified format
@@ -472,7 +470,35 @@ represents a best-fit approximation of this theoretical relationship using obser
 deviation of the slope from 1 and the presence of a small intercept are attributed to practical factors 
 such as planetary oblateness, rotational effects, and measurement uncertainties.''',
         failure_analysis="",
-        researcher="Agent FIND"
+        researcher="AgentFIND"
+    )
+
+    Example2: Discovery of PDE from Spring-Mass-Damper System Data
+    generate_scientific_report(
+        experiment_name="Discovery of PDE from Spring-Mass-Damper System Data",
+        experiment_objective="To discover a unified PDE from the given dataset",
+        data_source="dataset/pde_spring_series.csv and dataset/pde.csv",
+        input_variables=['k', 'c', 'm', 'd0'],
+        target_variable="a1, a2",
+        discovered_formulas=[
+            {
+                "formula": '''z=k/c,a1=1.20e-03-1.0z''',
+                "accuracy": 1.0000
+            },
+            {
+                "formula": '''z=m/c,a2=-4.18e-03-1.0z''',
+                "accuracy": 1.0000
+            },
+            {
+                "formula": '''xt=-k/c*x-m/c*xtt'''
+            }
+        ],
+        derivation_verification='''The derived PDE is consistent with the 
+form of a damped harmonic oscillator, but with additional terms that are not 
+typically present in the standard form. These terms might be due to specific 
+system characteristics, experimental conditions, or noise in the data.''',
+        failure_analysis="",
+        researcher="AgentFIND"
     )
     """
     
@@ -496,5 +522,34 @@ such as planetary oblateness, rotational effects, and measurement uncertainties.
     # Generate report in specified format
     return report.generate_txt_report()
 
+@tool
+def find_pde(path:str):
+    """
+    Using SINDy to discover PDEs with different system parameters.
+    Model: xt = a0 + a1*x + a2*xtt + a3*x^2 + a4*x*xt + a5*x*xtt + a6*xt^2 + a7*xt*xtt + a8*xtt^2.
 
-tools = [TavilySearch(max_results=2), understand, modify_parameter, identify_input, find, sr, verify, failure_analysis, generate_scientific_report]
+    Args:
+        path (str): The path to your series data.
+        
+    Returns:
+        prompt: The unified form of PDE obtained under different parameter settings, and the next step suggestions
+    """
+    os.system(f'python sindy.py -d {path} -s dataset/pde.csv')
+    df = pd.read_csv('dataset/pde.csv')
+    names = df.columns.tolist()
+    coef_name = ['a'+str(i) for i in range(9)]
+    param_name = [name for name in names if name not in coef_name+['Unnamed: 0']]
+    library = 'a0 + a1*x + a2*xtt + a3*x^2 + a4*x*xt + a5*x*xtt + a6*xt^2 + a7*xt*xtt + a8*xtt^2'.split(' + ')
+
+    means = [abs(df[name]).mean() for name in coef_name]
+    coef_remain_name = [coef_name[i] for i in range(len(coef_name)) if (means[i]>max(means)*0.05 and df[f'a{i}'].min()/df[f'a{i}'].max()>0.95)]
+    pde = 'xt=' + '+'.join([library[i] for i in range(len(library)) if (means[i]>max(means)*0.05 and df[f'a{i}'].min()/df[f'a{i}'].max()>0.95)])
+
+    prompt = f"""The results indicate that, across eight different combinations of the parameters {', '.join(param_name)}, 
+the obtained PDE form is consistently {pde}, where {', '.join(coef_remain_name)} vary with the changes in the parameters {', '.join(param_name)}. 
+Ask the user what to do next. Suggested question: Would you like me to set {coef_remain_name[0]} as the output and {', '.join(param_name)} as the 
+inputs to find their functional relationship? Or would you prefer to freely choose the inputs and outputs?"""
+    
+    return prompt
+
+tools = [TavilySearch(max_results=2), understand, find_pde, modify_parameter, identify_input, find, sr, verify, failure_analysis, generate_scientific_report]

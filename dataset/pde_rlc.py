@@ -240,14 +240,19 @@ def prepare_dataset(is_show=False):
     ]
     et, Nt = 20, 800
     if is_show: fig = plt.figure(); 
+    series = {}
     for R, L, C, I0, V0 in params:
         dt = et / float(Nt)
         df_each = fit_equ.prepare_data(R, L, C, I0, V0, et, Nt)
+        setting = f'R={R},L={L},C={C},I0={I0},V0={V0} '
+        series['t'], series[setting] = np.array(df_each['t']), np.array(df_each['i'])
         if is_show: plt.plot(df_each['t'], df_each['i'])
         x, xt, xtt = fit_equ.cal_derivatives(df_each, dt, Nt)
         X_library, y_library, names = fit_equ.build_library(x, xt, xtt)
         coef = fit_equ.fit(X_library, y_library)
         data.append([R, L, C, I0, V0] + list(coef))
+    df_series = pd.DataFrame(series)
+    df_series.to_csv('dataset/pde_rlc_series.csv')
 
     if is_show: 
         plt.xlabel('Time: t (s)', fontsize=20)

@@ -18,7 +18,7 @@ from agent.tools import tools
 
 # LLM
 llm = ChatTongyi(
-    model="qwen-max-latest",
+    model="qwen-max-0919",
     api_key=os.getenv("LLM_API_KEY")
 )
 
@@ -56,23 +56,61 @@ def stream_graph_updates(user_input: str):
     for event in events:
         event["messages"][-1].pretty_print()
 
-workflow = """The standard workflow consists of the following steps: 
-0. Understand the meaning of each hyperparameter in opt/config.yaml; 
-1. Enter the dataset path and the variable to be predicted; 
-2. Identify and select the most critical variables as inputs with SHAP; 
-3. Utilize the FIND module to discover formulas from the data; 
-4. If the formulas are overly complex, invoke the SR module to simplify them; 
-5. Validate the derived formulas; 
-6. Analyze potential causes of failures; 
-7. Generate an experimental report."""
-
-prompt = f"""You are an AI scientist who can extract formulas from data. 
+def task_initial():
+    while True:
+        task = input("Please select the task type (1-Function Discovery, 2-Dimensionless Number Discovery, 3-PDE Discovery): ")
+        if task in ['1', '2', '3']:
+            break
+        else:
+            print("Invalid input. Please enter 1, 2, or 3.")
+        if task.lower() in ["quit", "exit", "q"]:
+            print("Goodbye!")
+            quit()
+    if task == '1':
+        workflow = """The standard workflow consists of the following steps: 
+1. Understand the meaning of each hyperparameter in 'opt/config.yaml'; 
+2. Enter the dataset path and the variable to be predicted; 
+3. Identify and select the most critical variables as inputs with SHAP; 
+4. Utilize the FIND module to discover formulas from the data; 
+5. If the formulas are overly complex, invoke the SR module to simplify them; 
+6. Validate the derived formulas; 
+7. Analyze potential causes of failures; 
+8. Generate an experimental report."""
+    elif task == '2':
+        workflow = """The current task is to discover dimensionless numbers from data.
+The standard workflow consists of the following steps: 
+1. Understand the meaning of each hyperparameter in 'opt/config.yaml';
+2. Enter the dataset path and the variable to be predicted; 
+3. Identify and select the most critical variables as inputs with SHAP; 
+4. Set Dataset.d=0 to ensure that all discovered latent variables are dimensionless numbers.
+5. Utilize the FIND module to discover formulas from the data; 
+6. If the formulas are overly complex, invoke the SR module to simplify them; 
+7. Validate the derived formulas; 
+8. Analyze potential causes of failures; 
+9. Generate an experimental report."""
+    elif task == '3':
+        path = input("Please enter the path to your series data: ")
+        workflow = f"""The current task is to discover a unified PDE.
+The standard workflow consists of the following steps: 
+1. Understand the meaning of each hyperparameter in 'opt/config.yaml';
+2. Use SINDy to discover PDEs from '{path}';
+3. Select a PDE coefficient to be the output variable and set Dataset.data_path to 'dataset/pde.csv'; 
+4. Apply SHAP to identify the most critical variables as model inputs, with the exclusion of a0 to a8; 
+5. Utilize the FIND module to discover formulas from the data; 
+6. If the formulas are overly complex, invoke the SR module to simplify them; 
+7. Repeat steps 3 to 6 to discover the relationship between each PDE coefficient and the system parameters;
+8. Summarize the form of the PDE and proceed to validate the derived equation; 
+9. Analyze potential causes of failures; 
+10. Generate an experimental report."""
+        
+    prompt = f"""You are an AI scientist who can extract formulas from data. 
 I will ask some questions or requests, please provide a brief answer. 
 After each time you call a tool, you need to pause and suggest to the 
 user what to do next. {workflow}"""
+    return prompt
 
+prompt = task_initial()
 stream_graph_updates(prompt)
-
 while True:
     try:
         user_input = input("User: ")

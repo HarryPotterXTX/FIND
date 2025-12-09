@@ -47,8 +47,8 @@ Structure:
     top: 10
     k1: 64
     k2: 2
-    init_step: 2.0
-    refine_step: [1.0,0.5]
+    init_step: 1.0
+    refine_step: [0.5]
     fix: [[]]
   sr:
     adopt: false

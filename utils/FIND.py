@@ -56,16 +56,17 @@ class LatentLayer(torch.nn.Module):
             if len(latent_ratio)<self.latent_dim else latent_ratio
         assert len(self.latent_connect)==self.latent_dim and len(self.latent_ratio)==self.latent_dim, "Incorrect latent prior!"
         Fs, fs, Ee1, mus_idxs, mu_idx = [], [], [], [], 0
-        for connect in self.latent_connect:
-            idx0, idx1 = np.array([i for i in range(1,self.input_dim+1) if i not in connect])-1, np.array(connect)-1
-            E0, E1, e0, e1 = self.E[idx0], self.E[idx1], self.e[idx0], self.e[idx1]
-            F, f = self.solver(E0, -e0)
-            Fs.append(F), fs.append(f), Ee1.append([E1, e1]), mus_idxs.append([mu_idx,mu_idx+F.shape[-1]])
-            mu_idx = mus_idxs[-1][-1]
+        if not self.unique:
+            for connect in self.latent_connect:
+                idx0, idx1 = np.array([i for i in range(1,self.input_dim+1) if i not in connect])-1, np.array(connect)-1
+                E0, E1, e0, e1 = self.E[idx0], self.E[idx1], self.e[idx0], self.e[idx1]
+                F, f = self.solver(E0, -e0)
+                Fs.append(F), fs.append(f), Ee1.append([E1, e1]), mus_idxs.append([mu_idx,mu_idx+F.shape[-1]])
+                mu_idx = mus_idxs[-1][-1]
         for i in range(min(len(coef_previous),len(latent_connect))):
             assert len(coef_previous[i])==Fs[i].shape[-1], "The latent variables previously discovered do not satisfy the connectivity prior!"
         self.coef_previous = list(np.array(coef_previous).reshape(-1)) if coef_previous!=[] else []
-        self.coef_dim = mus_idxs[-1][-1]
+        self.coef_dim = mus_idxs[-1][-1] if mus_idxs!=[] else len(self.e)
         assert self.coef_dim>len(self.coef_previous), "The number of latent variables to be searched is 0!"
         return Fs, fs, Ee1, mus_idxs
 
@@ -109,18 +110,21 @@ class LatentLayer(torch.nn.Module):
         self.coef = coef
         # if we don't adopt a latent layer, i.e. z=x, we set mu=None, W=eye(p)
         if not np.isnan(coef).any():
-            mu = np.expand_dims(coef, axis=0) if len(coef.shape)==1 else coef
-            assert len(mu.shape)==2, "Shape Error."
-            # Wi^T=E*(Fi*mui+fi)+e, s.t. E1*(Fi*mui+fi)+e1!=0
-            self.mus, batch = [mu[:,self.mus_idxs[i][0]:self.mus_idxs[i][1]] for i in range(len(self.mus_idxs))], len(mu)
-            # labmdai=Fi*mui+fi (batch, latent_dim, input_dim)
-            self.labs = torch.zeros(batch, self.latent_dim, self.Fs[0].shape[0])   
-            for i in range(self.latent_dim):
-                # li=Fi*mui+fi
-                mui, Fi, fi = torch.tensor(self.mus[i], dtype=torch.float32).reshape(batch,-1,1), self.Fs[i], self.fs[i]
-                self.labs[:,i:i+1,:] = (torch.matmul(Fi,mui)+fi).transpose(1,2)
-            # Wi^T=E*li+e (batch, latent_dim, input_dim)
-            self.weight = torch.matmul(self.labs, self.E.T) + self.e.T
+            if self.unique:
+                self.weight = self.e.T
+            else:
+                mu = np.expand_dims(coef, axis=0) if len(coef.shape)==1 else coef
+                assert len(mu.shape)==2, "Shape Error."
+                # Wi^T=E*(Fi*mui+fi)+e, s.t. E1*(Fi*mui+fi)+e1!=0
+                self.mus, batch = [mu[:,self.mus_idxs[i][0]:self.mus_idxs[i][1]] for i in range(len(self.mus_idxs))], len(mu)
+                # labmdai=Fi*mui+fi (batch, latent_dim, input_dim)
+                self.labs = torch.zeros(batch, self.latent_dim, self.Fs[0].shape[0])   
+                for i in range(self.latent_dim):
+                    # li=Fi*mui+fi
+                    mui, Fi, fi = torch.tensor(self.mus[i], dtype=torch.float32).reshape(batch,-1,1), self.Fs[i], self.fs[i]
+                    self.labs[:,i:i+1,:] = (torch.matmul(Fi,mui)+fi).transpose(1,2)
+                # Wi^T=E*li+e (batch, latent_dim, input_dim)
+                self.weight = torch.matmul(self.labs, self.E.T) + self.e.T
         else:
             self.weight = torch.eye(self.input_dim)
         return self.weight
@@ -238,6 +242,10 @@ class FINDFrame():
         self.sr_module = SymbolicRegression(iter=opt.Structure.sr.iter, binary=opt.Structure.sr.binary, unary=opt.Structure.sr.unary,
                             logger_dir=self.log.logger_dir, D=self.D, d=self.d, units=self.units, batch=self.opt.Structure.sr.batch)
         self.terms = self.get_terms(self.degree, self.latent_dim)
+        # the equation DW=d has a unique solution e
+        if self.latent_module.unique:
+            self.opt.Structure.c2f.fix = self.latent_module.e.reshape(1,-1).tolist()
+            self.opt.Structure.c2f.refine_step = []
         # dimensionality reduction: W[:,j]=[W1j,W2j,...,Wnj]=c*v, find c rather than W[:,j]
         self.coef_previous = self.latent_module.coef_previous
         self.coef_dim = self.latent_module.coef_dim

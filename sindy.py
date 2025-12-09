@@ -1,12 +1,9 @@
 # https://xiaoyuxie.top/PyDimension-Book/examples/discover_spring_clean.html
-import copy
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression, Ridge
-
-plt.rcParams["font.family"] = "Arial"
-np.set_printoptions(suppress=True)
+import copy, argparse
 
 class SeqReg(object):
 
@@ -111,53 +108,17 @@ def PolyDiffPoint(u, x, deg=3, diff=1, index=None):
     
     return derivatives
 
-class SpringMassDataset(object):
-    '''
-    Generate data for spring-mass-damping systems
-    '''
-    def __init__(self, k, m, A0, c, v0=0, et=20, Nt=800):
-        super(SpringMassDataset, self).__init__()
-        self.k = k
-        self.m = m
-        self.A0 = A0
-        self.c = c
-        self.et = et
-        self.v0 = v0
-        self.Nt = Nt
-
-        self.omega_n = np.sqrt(k / m)
-        self.xi = c / 2 / np.sqrt(m * k)
-        self.omega_d = self.omega_n * np.sqrt(1 - self.xi**2)
-        self.A = np.sqrt(A0**2 + ((v0 + self.xi * self.omega_n * A0) / self.omega_d)**2)
-        self.phi = np.arctan(self.omega_d * A0 / (v0 + self.xi * self.omega_n * A0))
-
-    def solution(self):
-        t = np.linspace(0, self.et, self.Nt, endpoint=False)
-        x = self.A * np.exp(-self.xi * self.omega_n * t) * np.sin(self.omega_d * t + self.phi)
-        info = {'t': t, 'x': x}
-        df = pd.DataFrame(info)
-        return df
-
 class FitEqu(object):
     '''
     For a given data, fit the governing equation.
     '''
     def __init__(self):
         super(FitEqu, self).__init__()
-        
-    def prepare_data(self, k, m, A0, c, et, Nt):
-        '''
-        generate the dataset
-        '''
-        dataset = SpringMassDataset(k, m, A0, c, et=et, Nt=Nt)
-        data = dataset.solution()  # {'t': t, 'x': x}
-        return data
     
-    def cal_derivatives(self, data, dt, Nt, deg=3, num_points=100, boundary_t=5):
+    def cal_derivatives(self, series, dt, Nt, deg=3, num_points=100, boundary_t=5):
         '''
         prepare library for regression
         '''
-        x_clean = data['x'].to_numpy()
         t = np.arange(2*boundary_t, Nt-2*boundary_t)
         # points = np.random.choice(t, num_points, replace=False)
         points = t
@@ -170,8 +131,8 @@ class FitEqu(object):
         Nt_sample = 2 * boundary_t - 1
         for p in range(num_points):
             t = points[p]
-            x[p] = x_clean[t]
-            x_part = x_clean[t-int((Nt_sample-1)/2): t+int((Nt_sample+1)/2)]
+            x[p] = series[t]
+            x_part = series[t-int((Nt_sample-1)/2): t+int((Nt_sample+1)/2)]
             xt[p], xtt[p] = PolyDiffPoint(x_part, np.arange(Nt_sample)*dt, deg, 2)
 
         return x, xt, xtt
@@ -207,64 +168,36 @@ class FitEqu(object):
                         is_normalize=False, non_zero_term=2, threshold=threshold, fit_intercept=False, model_name='LR')
         print('Fitting r2', r2)
         return coef
-
-
-def prepare_dataset(is_show=False):
-    '''
-    prepare a sets of dataset with different parameters
-    '''
+    
+def main():
+    series_path = args.d
+    save_path = args.s
     data = []
+    df = pd.read_csv(series_path)
+    settings = df.columns.tolist()
+    settings.remove('Unnamed: 0')
+    settings.remove('t')
+    time = df['t']
+    dt, Nt = time[1]-time[0], len(time)
     fit_equ = FitEqu()
-    # c, k, m, d0
-    # params = [
-    #     [0.10, 1.0, 1.0, 0.10],
-    #     [0.05, 0.5, 0.8, 0.05],
-    #     [0.02, 0.1, 0.1, 0.02],
-    #     [0.07, 0.2, 0.2, 0.07],
-    #     [0.20, 0.1, 1.0, 0.05],
-    #     [0.12, 0.3, 0.7, 0.08],
-    #     [0.03, 0.6, 0.5, 0.09],
-    #     [0.20, 0.4, 0.3, 0.10]
-    # ]
-    params = [
-        [0.10, 1.0, 1.0, 0.10],
-        [0.50, 0.25, 3, 0.05],
-        [0.12, 0.3, 0.7, 0.08],
-        [0.07, 0.2, 5, 0.07],
-        [0.20, 0.1, 0.5, 0.05],
-        [0.12, 0.3, 2, 0.08],
-        [0.60, 0.6, 2, 0.09],
-        [0.20, 0.4, 3, 0.10]
-    ]
-    et, Nt = 20, 800
-    if is_show: fig = plt.figure(); 
-    series = {}
-    for c, k, m, d0 in params:
-        dt = et / float(Nt)
-        df_each = fit_equ.prepare_data(k, m, d0, c, et, Nt)
-        setting = f'c={c},k={k},m={m},d0={d0}'
-        series['t'], series[setting] = np.array(df_each['t']), np.array(df_each['x'])
-        if is_show: plt.plot(df_each['t'], df_each['x'])
-        x, xt, xtt = fit_equ.cal_derivatives(df_each, dt, Nt)
+    for setting in settings:
+        sets = [kv.split('=') for kv in setting.split(',')]
+        keys, values = [s[0] for s in sets], [float(s[1]) for s in sets]
+        series = df[setting].to_numpy()
+        x, xt, xtt = fit_equ.cal_derivatives(series, dt, Nt)
         X_library, y_library, names = fit_equ.build_library(x, xt, xtt)
         coef = fit_equ.fit(X_library, y_library)
-        data.append([c, k, m, d0] + list(coef))
-    df_series = pd.DataFrame(series)
-    df_series.to_csv('dataset/pde_spring_series.csv')
-
-    if is_show: 
-        plt.xlabel('Time: t/s', fontsize=20)
-        plt.ylabel('Displacement: x/m', fontsize=20)
-        plt.tick_params(labelsize=14)
-        plt.tight_layout()
-        plt.show()
-
-    df = pd.DataFrame(data, columns=['c', 'k', 'm', 'd0'] + [f'a{i}' for i in range(len(coef))])
-    return df
+        data.append(values + list(coef))
+    df = pd.DataFrame(data, columns=keys + [f'a{i}' for i in range(len(coef))])
+    print(df)
+    df.to_csv(save_path)
 
 if __name__=="__main__":
-    # fix xt=f(c,x,xtt,x^2,x*xt,x*xtt,xt^2,xt*xtt,xtt^2)
-    csv_path = 'dataset/pde_spring.csv'
-    df = prepare_dataset(is_show=True)
-    print(df)
-    df.to_csv(csv_path)
+    parser = argparse.ArgumentParser(description='SINDy')
+    parser.add_argument('-d', type=str, default='dataset/pde_spring_series.csv', help='time series path')
+    parser.add_argument('-s', type=str, default='dataset/pde_spring.csv', help='time series path')
+    parser.add_argument('-refine', type=float, default=0.0, help='refine step')
+    parser.add_argument('-top', type=int, default=20, help='number of displayed coefficients')
+    parser.add_argument('-sparse', type=int, default=20, help='sparsity of displayed coefficients')
+    args = parser.parse_args()
+    main()
